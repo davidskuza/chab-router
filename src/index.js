@@ -1,3 +1,65 @@
+export const parseQueryString = function(query) {
+  const params = {}
+
+  for (const param of query.split('&').map(x => x.split('='))) {
+    const key = param[0]
+    const value = param[1]
+
+    if (params[key]) {
+      // if key was present before, change to array and add new item
+      params[key] = [params[key]]
+      params[key].push(value)
+    } else {
+      params[key] = value
+    }
+  }
+
+  return params
+}
+
+export const getDynamicParamsNames = function(path) {
+  const paramsNames = []
+  const paramsNamesRe = /\{(.+?)\}/g
+  
+  let match = null
+  while (match = paramsNamesRe.exec(path)) {
+    paramsNames.push(match[1])
+  }
+  
+  return paramsNames
+}
+
+export const getReStringForRoute = function(route, paramsNames) {
+  let finalPathRe = route.path.replace('/', '\\/')
+
+  for (const paramName of paramsNames) {
+    let re = '(.+?)'
+
+    if (route.where && route.where[paramName]) {
+      re = route.where[paramName]
+    }
+
+    finalPathRe = finalPathRe.replace(`{${paramName}}`, re)
+  }
+  
+  return finalPathRe
+}
+
+export const getDynamicParamsValues = function(path, paramsReString) {
+  const paramsRe = new RegExp(`^${paramsReString}$`)
+  const paramsValues = []
+  
+  if (paramsRe.test(path)) {
+    const paramsMatch = paramsRe.exec(path)
+    
+    for (let i = 1; i < paramsMatch.length; ++i) {
+      paramsValues.push(paramsMatch[i])
+    }
+  }
+  
+  return paramsValues
+}
+
 export const CreateRouter = function(chab, id) {
   if (!id) {
     id = ''
@@ -7,64 +69,32 @@ export const CreateRouter = function(chab, id) {
 
   const baseTopicName = `router${id}`
   let routes = []
-
-  function parseQueryString(query) {
-    const params = {}
-
-    for (const param of query.split('&').map(x => x.split('='))) {
-      const key = param[0]
-      const value = param[1]
-
-      if (params[key]) {
-        // if key was present before, change to array and add new item
-        params[key] = [params[key]]
-        params[key].push(value)
-      } else {
-        params[key] = value
-      }
+  
+  function getRouteObject() {
+    return {
+      path: location.pathname,
+      hash: 
+        location.hash.length > 0
+          ? location.hash.substring(1)
+          : '',
+      query: 
+          location.search.length > 0 
+            ? parseQueryString(location.search.substring(1))
+            : {},
+      notFound: false
     }
-
-    return params
   }
 
   function matchRoute(routes, path) {
     for (const route of routes) {
-      const paramsNames = []
+      const paramsNames = getDynamicParamsNames(route.path)
       const paramsValues = []
       const params = {}
 
-      const paramsNamesRe = /\{(.+?)\}/g
-      let match = null
+      let finalPathRe = getReStringForRoute(route, paramsNames)
 
-      while (match = paramsNamesRe.exec(route.path)) {
-        paramsNames.push(match[1])
-      }
-
-      let finalPathRe = route.path.replace('/', '\\/')
-
-      for (const paramName of paramsNames) {
-        let re = '(.+?)'
-
-        if (route.where && route.where[paramName]) {
-          re = route.where[paramName]
-        }
-
-        finalPathRe = finalPathRe.replace(`{${paramName}}`, re)
-      }
-
-      const routeObject = {
-        path: location.pathname,
-        params,
-        hash: 
-          location.hash.length > 0
-            ? location.hash.substring(1)
-            : '',
-        query: 
-            location.search.length > 0 
-              ? parseQueryString(location.search.substring(1))
-              : {},
-        notFound: false
-      }
+      const routeObject = getRouteObject()
+      routeObject.params = params
 
       const paramsRe = new RegExp(`^${finalPathRe}$`)
 
@@ -76,7 +106,7 @@ export const CreateRouter = function(chab, id) {
         }
 
         for (let i = 0; i < paramsNames.length; ++i) {
-          params[paramsNames[i]] = paramsValues[i]
+          routeObject.params[paramsNames[i]] = paramsValues[i]
         }
       } else {
         routeObject.notFound = true
@@ -84,6 +114,10 @@ export const CreateRouter = function(chab, id) {
 
       return routeObject
     }
+  }
+  
+  function buildUrl(route, data) {
+    const urlParamsNames = getDynamicParamsNames(route.path)
   }
   
   function subscribes() {
@@ -104,6 +138,21 @@ export const CreateRouter = function(chab, id) {
     })
 
     const goSub = chab.subscribe(`${baseTopicName}.go`, function(data) {
+      if (!data.name) {
+        return
+      }
+      
+      const route = routes.find(x => x.name === data.name)
+      
+      if (!route) {
+        return
+      }
+      
+      const targetUrl = buildUrl(route, data)
+      
+      // TODO: change url
+      // TODO: publish
+      
       // data.name
       // data.params
       // data.query
