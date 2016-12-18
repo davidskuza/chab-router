@@ -1,6 +1,6 @@
 {
   "name": "chab-router",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "lib/chab-router.min.js",
   "scripts": {
