@@ -23,5 +23,8 @@
   "dependencies": {
     "babel-jest": "^18.0.0",
     "jest": "^18.0.0"
+  },
+  "jest": {
+    "modulePathIgnorePatterns": ["/node_modules/", "/.c9/"]
   }
 }

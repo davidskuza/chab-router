@@ -12,20 +12,20 @@ test('few diffrent arguments', function() {
 })
 
 test('array keys', function() {
-    const queryString = 'a=val&arr=gas&arr=avsa'
-    
-    const parsed = parseQueryString(queryString)
-    
-    expect(parsed.a).toBe('val')
-    expect(parsed.arr).toContain('gas')
-    expect(parsed.arr).toContain('avsa')
+  const queryString = 'a=val&arr=gas&arr=avsa'
+  
+  const parsed = parseQueryString(queryString)
+  
+  expect(parsed.a).toBe('val')
+  expect(parsed.arr).toContain('gas')
+  expect(parsed.arr).toContain('avsa')
 })
 
 test('weird key name', function() {
-    const queryString = 'a[]=val&fsa^3a=asd'
-    
-    const parsed = parseQueryString(queryString)
-    
-    expect(parsed['a[]']).toBe('val')
-    expect(parsed['fsa^3a']).toContain('asd')
+  const queryString = 'a[]=val&fsa^3a=asd'
+  
+  const parsed = parseQueryString(queryString)
+  
+  expect(parsed['a[]']).toBe('val')
+  expect(parsed['fsa^3a']).toContain('asd')
 })
