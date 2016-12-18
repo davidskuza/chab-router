@@ -167,6 +167,7 @@ export const CreateRouter = function(chab, id) {
             matchRoute(routes, locationObject))
         }
       }
+      window.removeEventListener('popstate', onPopStateFunction)
       window.addEventListener('popstate', onPopStateFunction)
 
       const currentRoute = matchRoute(routes, locationObject)
