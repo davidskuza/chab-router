@@ -28,7 +28,7 @@
         name: 'withParams',
         path: '/subpage/{id}/{title}',
         where: {
-          id: '(\d+)'
+          id: '(\\d+)'
         }
       }
     ]
