@@ -1,6 +1,6 @@
 {
   "name": "chab-router",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "lib/chab-router.min.js",
   "scripts": {
@@ -23,6 +23,9 @@
     "jest": "^18.0.0"
   },
   "jest": {
-    "modulePathIgnorePatterns": ["/node_modules/", "/.c9/"]
+    "modulePathIgnorePatterns": [
+      "/node_modules/",
+      "/.c9/"
+    ]
   }
 }
