@@ -112,6 +112,30 @@ export const matchRoute = function(routes, locationObject) {
   return routeObject
 }
 
+export const buildUrl = function(route, data) {
+  const urlParamsNames = getDynamicParamsNames(route.path)
+  
+  let finalUrl = route.path
+  
+  for (const paramName of urlParamsNames) {
+    finalUrl = finalUrl.replace(`{${paramName}}`, data.params[paramName])
+  }
+  
+  if (data.query) {
+    finalUrl += '?'
+    
+    finalUrl += Object.keys(data.query)
+      .map(x => `${encodeURIComponent(x)}=${encodeURIComponent(data.query[x])}`)
+      .join('&')
+  }
+  
+  if (data.hash) {
+    finalUrl += `#${data.hash}`
+  }
+  
+  return finalUrl
+}
+
 export const CreateRouter = function(chab, id) {
   if (!id) {
     id = ''
@@ -122,13 +146,9 @@ export const CreateRouter = function(chab, id) {
   const baseTopicName = `router${id}`
   let routes = []
   
-  function buildUrl(route, data) {
-    const urlParamsNames = getDynamicParamsNames(route.path)
-  }
-  
-  function subscribes() {
+  function subscribeAll(locationObject, historyObject) {
     const initializeSub = chab.subscribe(`${baseTopicName}.initialize`, function() {
-      const currentRoute = matchRoute(routes, location)
+      const currentRoute = matchRoute(routes, locationObject)
 
       if (!currentRoute.notFound) {
         chab.publish(`${baseTopicName}.go`, currentRoute)
@@ -156,26 +176,55 @@ export const CreateRouter = function(chab, id) {
       
       const targetUrl = buildUrl(route, data)
       
-      // TODO: change url
-      // TODO: publish
+      // TODO: before hooks
+      
+      historyObject.pushState(null, null, targetUrl)
+      
+      chab.publish(`${baseTopicName}.navigated`, 
+        matchRoute(routes, locationObject))
       
       // data.name
       // data.params
       // data.query
       // data.hash
-
-      // TODO: do it
-      
-      //chab.publish(`${baseTopicName}.navigated`, data)
     })
+    
+    const goBackSub = chab.subscribe(`${baseTopicName}.go.back`, function() {
+      historyObject.back()
+    })
+    
+    const goForwardSub = chab.subscribe(`${baseTopicName}.go.forward`, function() {
+      historyObject.forward()
+    })
+    
+    const goBySub = chab.subscribe(`${baseTopicName}.go.by`, function(number) {
+      historyObject.go(number)
+    })
+    
+    const currentRouteSub = chab.subscribe(`${baseTopicName}.currentRoute.get`, 
+      function() {
+        chab.publish(`${baseTopicName}.currentRoute.value`, 
+          matchRoute(routes, locationObject))
+      })
+    
+    window.onpopstate = function() {
+      chab.publish(`${baseTopicName}.navigated`, 
+        matchRoute(routes, locationObject))
+    }
 
     const terminateSub = chab.subscribe(`${baseTopicName}.terminate`, function() {
       goSub.unsubscribe()
       routesSetSub.unsubscribe()
       initializeSub.unsubscribe()
+      currentRouteSub.unsubscribe()
+      
+      goBySub.unsubscribe()
+      goForwardSub.unsubscribe()
+      goBackSub.unsubscribe()
+      
       terminateSub.unsubscribe()
     })
   }
 
-  subscribes()
+  subscribeAll(location, history)
 }
