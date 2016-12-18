@@ -145,24 +145,49 @@ export const CreateRouter = function(chab, id) {
 
   const baseTopicName = `router${id}`
   let routes = []
+  let beforeHooks = []
 
   let onPopStateFunction = null
+  
+  function callBeforeHooks() {
+    for (const beforeHook of beforeHooks) {
+      if (!beforeHook()) {
+        return false // if somebody returned false, it means stop, don't navigate
+      }
+    }
+    
+    return true
+  }
   
   function subscribeAll(locationObject, historyObject) {
     const initializeSub = chab.subscribe(`${baseTopicName}.initialize`, function() {
       onPopStateFunction = function(e) {
-        chab.publish(`${baseTopicName}.navigated`, matchRoute(routes, locationObject))
+        if (callBeforeHooks()) {
+          chab.publish(`${baseTopicName}.navigated`, 
+            matchRoute(routes, locationObject))
+        }
       }
       window.addEventListener('popstate', onPopStateFunction)
 
       const currentRoute = matchRoute(routes, locationObject)
 
       if (!currentRoute.notFound) {
-        // TODO: before hooks
-        
-        chab.publish(`${baseTopicName}.navigated`, currentRoute)
+        if (callBeforeHooks()) {
+          chab.publish(`${baseTopicName}.navigated`, currentRoute)
+        }
       } else {
         chab.publish(`${baseTopicName}.navigated.notFound`, currentRoute)
+      }
+    })
+    
+    chab.subscribe(`${baseTopicName}.beforeHook.add`, function(data) {
+      beforeHooks.push(data)
+    })
+    
+    chab.subscribe(`${baseTopicName}.beforeHook.remove`, function(data) {
+      const index = beforeHooks.indexOf(data)
+      if (index >= 0) {
+        beforeHooks.splice(index, 1)
       }
     })
 
@@ -185,17 +210,14 @@ export const CreateRouter = function(chab, id) {
       
       const targetUrl = buildUrl(route, data)
       
-      // TODO: before hooks
+      if (!callBeforeHooks()) {
+        return
+      }
       
       historyObject.pushState(null, null, targetUrl)
       
       chab.publish(`${baseTopicName}.navigated`, 
         matchRoute(routes, locationObject))
-      
-      // data.name
-      // data.params
-      // data.query
-      // data.hash
     })
     
     const goBackSub = chab.subscribe(`${baseTopicName}.go.back`, function() {
