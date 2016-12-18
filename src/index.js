@@ -145,9 +145,16 @@ export const CreateRouter = function(chab, id) {
 
   const baseTopicName = `router${id}`
   let routes = []
+
+  let onPopStateFunction = null
   
   function subscribeAll(locationObject, historyObject) {
     const initializeSub = chab.subscribe(`${baseTopicName}.initialize`, function() {
+      onPopStateFunction = function(e) {
+        chab.publish(`${baseTopicName}.navigated`, matchRoute(routes, locationObject))
+      }
+      window.addEventListener('popstate', onPopStateFunction)
+
       const currentRoute = matchRoute(routes, locationObject)
 
       if (!currentRoute.notFound) {
@@ -162,7 +169,7 @@ export const CreateRouter = function(chab, id) {
     const routesSetSub = chab.subscribe(`${baseTopicName}.routes.set`, function(data) {
       routes = data.routes
 
-      chab.publish(`${baseTopicName}.init`)
+      chab.publish(`${baseTopicName}.initialize`)
     })
 
     const goSub = chab.subscribe(`${baseTopicName}.go`, function(data) {
@@ -208,13 +215,10 @@ export const CreateRouter = function(chab, id) {
         chab.publish(`${baseTopicName}.currentRoute.value`, 
           matchRoute(routes, locationObject))
       })
-    
-    window.onpopstate = function() {
-      chab.publish(`${baseTopicName}.navigated`, 
-        matchRoute(routes, locationObject))
-    }
 
     const terminateSub = chab.subscribe(`${baseTopicName}.terminate`, function() {
+      window.removeEventListener('popstate', onPopStateFunction)
+
       goSub.unsubscribe()
       routesSetSub.unsubscribe()
       initializeSub.unsubscribe()
