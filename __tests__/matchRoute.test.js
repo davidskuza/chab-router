@@ -20,6 +20,7 @@ test('matches correct url, home', function() {
   
   const route = matchRoute(routes, locationObject)
   
+  expect(route.name).toBe('home')
   expect(route.notFound).toBe(false)
   expect(route.path).toBe('/')
 })
@@ -44,6 +45,7 @@ test('matches correct url, contact', function() {
   
   const route = matchRoute(routes, locationObject)
   
+  expect(route.name).toBe('contact')
   expect(route.notFound).toBe(false)
   expect(route.path).toBe('/contact')
 })
@@ -95,6 +97,7 @@ test('matches with dynamic params', function() {
   
   const route = matchRoute(routes, locationObject)
   
+  expect(route.name).toBe('articleRead')
   expect(route.notFound).toBe(false)
   expect(route.params.id).toBe('421')
   expect(route.params.title).toBe('hello-from-tests')
@@ -124,6 +127,7 @@ test('matches correct url with query and hash info', function() {
   
   const route = matchRoute(routes, locationObject)
   
+  expect(route.name).toBe('home')
   expect(route.notFound).toBe(false)
   expect(route.hash).toBe('test-data')
   expect(route.query.firstItem).toBe('123a')

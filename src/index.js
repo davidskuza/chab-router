@@ -76,6 +76,7 @@ export const matchesUrl = function(path, pathReString) {
 
 export const getRouteObject = function(locationObject) {
   return {
+    name: '',
     path: locationObject.pathname,
     params: [],
     hash: 
@@ -104,6 +105,8 @@ export const matchRoute = function(routes, locationObject) {
         locationObject.pathname, finalPathRe)
         
       routeObject.params = createObjectFromArrays(paramsNames, paramsValues)
+      
+      routeObject.name = route.name
       
       break
     }
