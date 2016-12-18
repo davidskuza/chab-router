@@ -151,7 +151,9 @@ export const CreateRouter = function(chab, id) {
       const currentRoute = matchRoute(routes, locationObject)
 
       if (!currentRoute.notFound) {
-        chab.publish(`${baseTopicName}.go`, currentRoute)
+        // TODO: before hooks
+        
+        chab.publish(`${baseTopicName}.navigated`, currentRoute)
       } else {
         chab.publish(`${baseTopicName}.navigated.notFound`, currentRoute)
       }
