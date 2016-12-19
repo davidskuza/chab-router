@@ -115,6 +115,12 @@ export const matchRoute = function(routes, locationObject) {
   return routeObject
 }
 
+export const getSearchString = function(object) {
+  return Object.keys(object)
+    .map(x => `${encodeURIComponent(x)}=${encodeURIComponent(object[x])}`)
+    .join('&')
+}
+
 export const buildUrl = function(route, data) {
   const urlParamsNames = getDynamicParamsNames(route.path)
   
@@ -127,9 +133,7 @@ export const buildUrl = function(route, data) {
   if (data.query) {
     finalUrl += '?'
     
-    finalUrl += Object.keys(data.query)
-      .map(x => `${encodeURIComponent(x)}=${encodeURIComponent(data.query[x])}`)
-      .join('&')
+    finalUrl += getSearchString(data.query)
   }
   
   if (data.hash) {
@@ -260,7 +264,9 @@ export const CreateRouter = function(chab, id) {
       })
 
       callBeforeHooks(routes, {
-        pathname: targetUrl
+        pathname: targetUrl,
+        hash: `#${data.hash}`,
+        search: `?${getSearchString(data.query)}`
       })
     })
     
