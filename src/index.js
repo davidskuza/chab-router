@@ -265,8 +265,8 @@ export const CreateRouter = function(chab, id) {
 
       callBeforeHooks(routes, {
         pathname: targetUrl,
-        hash: `#${data.hash}`,
-        search: `?${getSearchString(data.query)}`
+        hash: data.hash ? `#${data.hash}` : '',
+        search: data.query ? `?${getSearchString(data.query)}` : ''
       })
     })
     
