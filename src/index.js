@@ -152,9 +152,11 @@ export const CreateRouter = function(chab, id) {
 
   let onPopStateFunction = null
   
-  function callBeforeHooks() {
+  function callBeforeHooks(routes, locationObject) {
+    const currentRoute = matchRoute(routes, locationObject)
+
     for (const beforeHook of beforeHooks) {
-      if (!beforeHook()) {
+      if (!beforeHook(currentRoute)) {
         return false // if somebody returned false, it means stop, don't navigate
       }
     }
@@ -165,7 +167,7 @@ export const CreateRouter = function(chab, id) {
   function subscribeAll(locationObject, historyObject) {
     const initializeSub = chab.subscribe(`${baseTopicName}.initialize`, function() {
       onPopStateFunction = function(e) {
-        if (callBeforeHooks()) {
+        if (callBeforeHooks(routes, locationObject)) {
           chab.publish(`${baseTopicName}.navigated`, 
             matchRoute(routes, locationObject))
         }
@@ -176,7 +178,7 @@ export const CreateRouter = function(chab, id) {
       const currentRoute = matchRoute(routes, locationObject)
 
       if (!currentRoute.notFound) {
-        if (callBeforeHooks()) {
+        if (callBeforeHooks(routes, locationObject)) {
           chab.publish(`${baseTopicName}.navigated`, currentRoute)
         }
       } else {
@@ -214,7 +216,7 @@ export const CreateRouter = function(chab, id) {
       
       const targetUrl = buildUrl(route, data)
       
-      if (!callBeforeHooks()) {
+      if (!callBeforeHooks(routes, locationObject)) {
         return
       }
       
