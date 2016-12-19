@@ -149,28 +149,51 @@ export const CreateRouter = function(chab, id) {
   const baseTopicName = `router${id}`
   let routes = []
   let beforeHooks = []
+  let beforeHooksCallsResults = []
 
   let onPopStateFunction = null
   
   function callBeforeHooks(routes, locationObject) {
     const currentRoute = matchRoute(routes, locationObject)
+    beforeHooksCallsResults = []
 
     for (const beforeHook of beforeHooks) {
-      if (!beforeHook(currentRoute)) {
-        return false // if somebody returned false, it means stop, don't navigate
-      }
+      beforeHook(currentRoute)
     }
-    
-    return true
   }
   
   function subscribeAll(locationObject, historyObject) {
+    chab.subscribe(`${baseTopicName}.beforeHook.allow`, function() {
+      beforeHooksCallsResults.push(true)
+
+      if (beforeHooksCallsResults.length === beforeHooks.length) {
+        if (beforeHooksCallsResults.filter(x => !x).length > 0) {
+          chab.publish(`${baseTopicName}.beforeHook.disallowed`)
+        } else {
+          chab.publish(`${baseTopicName}.beforeHook.allowed`)
+        }
+      }
+    })
+
+    chab.subscribe(`${baseTopicName}.beforeHook.disallow`, function() {
+      beforeHooksCallsResults.push(false)
+
+      chab.publish(`${baseTopicName}.beforeHook.disallowed`)
+    })
+
     const initializeSub = chab.subscribe(`${baseTopicName}.initialize`, function() {
       onPopStateFunction = function(e) {
-        if (callBeforeHooks(routes, locationObject)) {
-          chab.publish(`${baseTopicName}.navigated`, 
-            matchRoute(routes, locationObject))
-        }
+        const allowedSub = chab.subscribe(`${baseTopicName}.beforeHook.allowed`, function() {
+          allowedSub.unsubscribe()
+
+          chab.publish(`${baseTopicName}.navigated`, matchRoute(routes, locationObject))
+        })
+        const disallowedSub = chab.subscribe(`${baseTopicName}.beforeHook.disallowed`, function() {
+          allowedSub.unsubscribe()
+          disallowedSub.unsubscribe()
+        })
+
+        callBeforeHooks(routes, locationObject)
       }
       window.removeEventListener('popstate', onPopStateFunction)
       window.addEventListener('popstate', onPopStateFunction)
@@ -178,9 +201,17 @@ export const CreateRouter = function(chab, id) {
       const currentRoute = matchRoute(routes, locationObject)
 
       if (!currentRoute.notFound) {
-        if (callBeforeHooks(routes, locationObject)) {
+        const allowedSub = chab.subscribe(`${baseTopicName}.beforeHook.allowed`, function() {
+          allowedSub.unsubscribe()
+
           chab.publish(`${baseTopicName}.navigated`, currentRoute)
-        }
+        })
+        const disallowedSub = chab.subscribe(`${baseTopicName}.beforeHook.disallowed`, function() {
+          allowedSub.unsubscribe()
+          disallowedSub.unsubscribe()
+        })
+        
+        callBeforeHooks(routes, locationObject)
       } else {
         chab.publish(`${baseTopicName}.navigated.notFound`, currentRoute)
       }
@@ -216,14 +247,19 @@ export const CreateRouter = function(chab, id) {
       
       const targetUrl = buildUrl(route, data)
       
-      if (!callBeforeHooks(routes, locationObject)) {
-        return
-      }
+      const allowedSub = chab.subscribe(`${baseTopicName}.beforeHook.allowed`, function() {
+        allowedSub.unsubscribe()
+
+        historyObject.pushState(null, null, targetUrl)
       
-      historyObject.pushState(null, null, targetUrl)
-      
-      chab.publish(`${baseTopicName}.navigated`, 
-        matchRoute(routes, locationObject))
+        chab.publish(`${baseTopicName}.navigated`, matchRoute(routes, locationObject))
+      })
+      const disallowedSub = chab.subscribe(`${baseTopicName}.beforeHook.disallowed`, function() {
+        allowedSub.unsubscribe()
+        disallowedSub.unsubscribe()
+      })
+
+      callBeforeHooks(routes, locat1ionObject)
     })
     
     const goBackSub = chab.subscribe(`${baseTopicName}.go.back`, function() {
