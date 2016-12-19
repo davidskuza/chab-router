@@ -259,7 +259,7 @@ export const CreateRouter = function(chab, id) {
         disallowedSub.unsubscribe()
       })
 
-      callBeforeHooks(routes, locat1ionObject)
+      callBeforeHooks(routes, locationObject)
     })
     
     const goBackSub = chab.subscribe(`${baseTopicName}.go.back`, function() {
