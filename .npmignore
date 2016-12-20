@@ -4,6 +4,7 @@ __tests__
 webpack.config.js
 .babelrc
 .npmignore
+.c9
 
 # Logs
 logs
