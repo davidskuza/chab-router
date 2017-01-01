@@ -202,7 +202,12 @@ export const CreateRouter = function(chab, id) {
               }
             })
   
-          callBeforeHooks(routes, locationObject)
+          if (beforeHooks.length > 0) {
+            callBeforeHooks(routes, locationObject)
+          } else {
+            chab.publish(`${baseTopicName}.navigated`, 
+              matchRoute(routes, locationObject))
+          }
         }
         window.removeEventListener('popstate', onPopStateFunction)
         window.addEventListener('popstate', onPopStateFunction)
@@ -219,7 +224,11 @@ export const CreateRouter = function(chab, id) {
               }
             })
           
-          callBeforeHooks(routes, locationObject)
+          if (beforeHooks.length > 0) {
+            callBeforeHooks(routes, locationObject)
+          } else {
+            chab.publish(`${baseTopicName}.navigated`, currentRoute)
+          }
         } else {
           chab.publish(`${baseTopicName}.navigated.notFound`, currentRoute)
         }
@@ -267,11 +276,18 @@ export const CreateRouter = function(chab, id) {
           }
         })
 
-      callBeforeHooks(routes, {
-        pathname: targetUrl,
-        hash: data.hash ? `#${data.hash}` : '',
-        search: data.query ? `?${getSearchString(data.query)}` : ''
-      })
+      if (beforeHooks.length > 0) {
+        callBeforeHooks(routes, {
+          pathname: targetUrl,
+          hash: data.hash ? `#${data.hash}` : '',
+          search: data.query ? `?${getSearchString(data.query)}` : ''
+        })
+      } else {
+        historyObject.pushState(null, null, targetUrl)
+        
+        chab.publish(`${baseTopicName}.navigated`, 
+          matchRoute(routes, locationObject))
+      }
     })
     
     const goBackSub = chab.subscribe(`${baseTopicName}.go.back`, function() {
