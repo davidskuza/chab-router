@@ -264,7 +264,10 @@ export const CreateRouter = function(chab, id) {
 
       const targetUrl = buildUrl(route, data)
 
-      chab.publish(`${baseTopicName}.url.value`, targetUrl)
+      chab.publish(`${baseTopicName}.url.value`, {
+        name: data.name,
+        url: targetUrl
+      })
     })
 
     const goSub = chab.subscribe(`${baseTopicName}.go`, function(data) {
