@@ -251,6 +251,22 @@ export const CreateRouter = function(chab, id) {
       chab.publish(`${baseTopicName}.initialize`)
     })
 
+    const getUrlSub = chab.subscribe(`${baseTopicName}.url.get`, function(data) {
+      if (!data.name) {
+        chab.publish(`${baseTopicName}.url.value`, null)
+      }
+      
+      const route = routes.find(x => x.name === data.name)
+      
+      if (!route) {
+        chab.publish(`${baseTopicName}.url.value`, null)
+      }
+
+      const targetUrl = buildUrl(route, data)
+
+      chab.publish(`${baseTopicName}.url.value`, targetUrl)
+    })
+
     const goSub = chab.subscribe(`${baseTopicName}.go`, function(data) {
       if (!data.name) {
         return
@@ -314,6 +330,7 @@ export const CreateRouter = function(chab, id) {
           
         window.removeEventListener('popstate', onPopStateFunction)
   
+        getUrlSub.unsubscribe()
         goSub.unsubscribe()
         routesSetSub.unsubscribe()
         initializeSub.unsubscribe()
